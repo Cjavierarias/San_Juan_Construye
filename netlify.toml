@@ -2,7 +2,7 @@
   publish = "/"
 
 [build.environment]
-  APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywr0TXyDbiLSPq1M_dJtayccmWyIZrO4jhSAEu8NSq4AvzM0nqZDm3Tj2ULeiXOaxO/exec"
+  APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxfDoz7CKb85_fOrWym0YnzCBAa38sTS3X7S1x76L36FoI3OwzAXhzwehya-FiFu7In/exec"
 
 [[redirects]]
   from = "/api/saveOrder"
