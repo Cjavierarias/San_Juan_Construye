@@ -61,6 +61,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             transition: all 0.3s ease;
             border: 1px solid #f0f0f0;
+            position: relative;
         }
         
         .product-card:hover {
@@ -132,6 +133,12 @@
             box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
         }
         
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
         .btn-secondary {
             background: #2C3E50;
             color: white;
@@ -164,6 +171,8 @@
             border-color: #FF6B35;
             background: #FF6B35;
             color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
         }
         
         .toast {
@@ -185,6 +194,10 @@
         
         .toast-success {
             border-left: 4px solid #27AE60;
+        }
+        
+        .toast-error {
+            border-left: 4px solid #dc3545;
         }
         
         .toast-content {
@@ -241,6 +254,7 @@
             border-radius: 16px;
             padding: 24px;
             margin: 32px 0;
+            border: 2px solid #FF6B35;
         }
         
         .section-title {
@@ -301,6 +315,55 @@
             position: relative;
             z-index: 2;
         }
+
+        /* Badge para productos destacados */
+        .featured-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .product-card {
+            position: relative;
+        }
+
+        /* Mejoras para el carousel de destacados */
+        .featured-products {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 32px 0;
+            border: 2px solid #FF6B35;
+        }
+
+        /* Categorías mejoradas */
+        .category-filter {
+            background: white;
+            border: 2px solid #e0e0e0;
+            color: #666;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .category-filter:hover,
+        .category-filter.active {
+            border-color: #FF6B35;
+            background: #FF6B35;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
         
         @media (max-width: 768px) {
             .product-grid {
@@ -315,59 +378,16 @@
             .section-title {
                 font-size: 1.5rem;
             }
+            
+            .featured-products {
+                padding: 16px;
+                margin: 24px 0;
+            }
         }
-        /* ... todo tu CSS existente ... */
 
-/* 🔥 AGREGAR ESTO AL FINAL del CSS existente */
-
-/* Badge para productos destacados */
-.featured-badge {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    background: linear-gradient(135deg, #FFD700, #FFA500);
-    color: #000;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: bold;
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-.product-card {
-    position: relative;
-}
-
-/* Mejoras para el carousel de destacados */
-.featured-products {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 16px;
-    padding: 24px;
-    margin: 32px 0;
-    border: 2px solid #FF6B35;
-}
-
-/* Categorías mejoradas */
-.category-filter {
-    background: white;
-    border: 2px solid #e0e0e0;
-    color: #666;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.category-filter:hover,
-.category-filter.active {
-    border-color: #FF6B35;
-    background: #FF6B35;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
-}
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -383,7 +403,7 @@
                 
                 <!-- Navigation -->
                 <nav class="hidden md:flex items-center space-x-8">
-                    <a href="index.html" class="text-gray-700 hover:text-orange-primary font-medium transition-colors">Inicio</a>
+                    <a href="index.html" class="text-orange-primary font-medium">Inicio</a>
                     <a href="cart.html" class="text-gray-700 hover:text-orange-primary font-medium transition-colors">Carrito</a>
                     <a href="checkout.html" class="text-gray-700 hover:text-orange-primary font-medium transition-colors">Pedidos</a>
                 </nav>
@@ -442,13 +462,8 @@
                 </div>
                 
                 <!-- Category Filters -->
-                <div class="flex flex-wrap gap-3">
-                    <button class="category-filter active" data-category="all">Todos</button>
-                    <button class="category-filter" data-category="herramientas">Herramientas</button>
-                    <button class="category-filter" data-category="electricos">Eléctricos</button>
-                    <button class="category-filter" data-category="tornillos">Tornillos</button>
-                    <button class="category-filter" data-category="pinturas">Pinturas</button>
-                    <button class="category-filter" data-category="seguridad">Seguridad</button>
+                <div class="flex flex-wrap gap-3 justify-center">
+                    <!-- Los filtros se generarán dinámicamente -->
                 </div>
             </div>
         </div>
@@ -461,30 +476,7 @@
         <div class="splide" id="featured-carousel">
             <div class="splide__track">
                 <ul class="splide__list">
-                    <li class="splide__slide">
-                        <div class="bg-white rounded-lg p-6 text-center">
-                            <img src="resources/drill.jpg" alt="Taladro Eléctrico" class="w-full h-48 object-cover rounded-lg mb-4">
-                            <h3 class="font-bold text-lg mb-2">Taladro Eléctrico 12V</h3>
-                            <p class="text-orange-primary font-bold text-xl mb-4">$3,499.99</p>
-                            <button class="btn-primary" onclick="addToCart('drill-003')">Agregar al Carrito</button>
-                        </div>
-                    </li>
-                    <li class="splide__slide">
-                        <div class="bg-white rounded-lg p-6 text-center">
-                            <img src="resources/toolbox.jpg" alt="Caja de Herramientas" class="w-full h-48 object-cover rounded-lg mb-4">
-                            <h3 class="font-bold text-lg mb-2">Caja de Herramientas 3 Niveles</h3>
-                            <p class="text-orange-primary font-bold text-xl mb-4">$2,499.99</p>
-                            <button class="btn-primary" onclick="addToCart('toolbox-011')">Agregar al Carrito</button>
-                        </div>
-                    </li>
-                    <li class="splide__slide">
-                        <div class="bg-white rounded-lg p-6 text-center">
-                            <img src="resources/helmet.jpg" alt="Casco de Seguridad" class="w-full h-48 object-cover rounded-lg mb-4">
-                            <h3 class="font-bold text-lg mb-2">Casco de Seguridad Blanco</h3>
-                            <p class="text-orange-primary font-bold text-xl mb-4">$549.99</p>
-                            <button class="btn-primary" onclick="addToCart('helmet-009')">Agregar al Carrito</button>
-                        </div>
-                    </li>
+                    <!-- Los productos destacados se generarán dinámicamente -->
                 </ul>
             </div>
         </div>
@@ -532,64 +524,169 @@
     <script src="main.js"></script>
     
     <script>
-        // Initialize featured products carousel
+        // Inicializar cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', function() {
-            new Splide('#featured-carousel', {
-                type: 'loop',
-                perPage: 3,
-                perMove: 1,
-                gap: '2rem',
-                autoplay: true,
-                interval: 3000,
-                breakpoints: {
-                    768: {
-                        perPage: 1,
-                    },
-                    1024: {
-                        perPage: 2,
-                    }
-                }
-            }).mount();
-            
-            // Generate products grid
-            generateProductsGrid();
+            // Esperar a que la aplicación se inicialice
+            setTimeout(() => {
+                initializeCarousel();
+                bindSearchEvents();
+            }, 1000);
         });
-        
-        function generateProductsGrid() {
-            const productsGrid = document.querySelector('.product-grid');
-            const products = window.ferreteriaApp.products;
+
+        function initializeCarousel() {
+            // Solo inicializar si hay productos destacados
+            const featuredProducts = window.ferreteriaApp?.getFeaturedProducts();
             
-            productsGrid.innerHTML = products.map(product => {
-                const stockClass = product.stock > 20 ? 'stock-high' : 
-                                 product.stock > 10 ? 'stock-medium' : 'stock-low';
-                const stockText = product.stock > 20 ? 'Disponible' : 
-                                product.stock > 10 ? 'Poco stock' : 'Agotado';
-                
-                return `
-                    <div class="product-card p-6" data-category="${product.category}">
-                        <img src="${product.image}" alt="${product.name}" class="product-image mb-4">
-                        <div class="mb-2">
-                            <span class="stock-indicator ${stockClass}">${stockText}</span>
-                        </div>
-                        <h3 class="product-name font-bold text-lg mb-2 text-gray-800 font-inter">${product.name}</h3>
-                        <p class="product-description text-gray-600 text-sm mb-3">${product.description}</p>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs text-gray-500">Código: ${product.code}</span>
-                            <span class="text-xs text-gray-500">Stock: ${product.stock}</span>
-                        </div>
-                        <div class="price-tag mb-4">$${product.price.toFixed(2)}</div>
-                        <button 
-                            class="btn-primary w-full" 
-                            onclick="addToCart('${product.id}')"
-                            ${product.stock === 0 ? 'disabled' : ''}
-                        >
-                            ${product.stock === 0 ? 'Agotado' : 'Agregar al Carrito'}
-                        </button>
+            if (featuredProducts && featuredProducts.length > 0 && typeof Splide !== 'undefined') {
+                try {
+                    new Splide('#featured-carousel', {
+                        type: 'loop',
+                        perPage: Math.min(3, featuredProducts.length),
+                        perMove: 1,
+                        gap: '2rem',
+                        autoplay: true,
+                        interval: 3000,
+                        breakpoints: {
+                            768: {
+                                perPage: 1,
+                            },
+                            1024: {
+                                perPage: 2,
+                            }
+                        }
+                    }).mount();
+                } catch (error) {
+                    console.error('Error inicializando carousel:', error);
+                }
+            }
+        }
+
+        function bindSearchEvents() {
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    const searchTerm = e.target.value.toLowerCase().trim();
+                    filterProducts(searchTerm);
+                });
+            }
+        }
+
+        function filterProducts(searchTerm) {
+            const productCards = document.querySelectorAll('.product-card');
+            let visibleCount = 0;
+
+            productCards.forEach(card => {
+                const productName = card.querySelector('.product-name')?.textContent.toLowerCase() || '';
+                const productDescription = card.querySelector('.product-description')?.textContent.toLowerCase() || '';
+                const productCode = card.querySelector('.text-xs.text-gray-500')?.textContent.toLowerCase() || '';
+
+                const matchesSearch = searchTerm === '' || 
+                    productName.includes(searchTerm) || 
+                    productDescription.includes(searchTerm) ||
+                    productCode.includes(searchTerm);
+
+                if (matchesSearch) {
+                    card.style.display = 'block';
+                    card.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                    card.classList.add('hidden');
+                }
+            });
+
+            // Mostrar mensaje si no hay resultados
+            showNoResultsMessage(visibleCount === 0 && searchTerm !== '');
+        }
+
+        function showNoResultsMessage(show) {
+            // Remover mensaje anterior si existe
+            const existingMessage = document.getElementById('no-results-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+
+            if (show) {
+                const productsGrid = document.querySelector('.product-grid');
+                const message = document.createElement('div');
+                message.id = 'no-results-message';
+                message.className = 'col-span-full text-center py-12';
+                message.innerHTML = `
+                    <div class="text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h3 class="text-xl font-semibold mb-2">No se encontraron productos</h3>
+                        <p>Intenta con otros términos de búsqueda</p>
                     </div>
                 `;
-            }).join('');
+                productsGrid.appendChild(message);
+            }
         }
+
+        // Función global para recargar productos
+        function refreshProducts() {
+            if (window.ferreteriaApp) {
+                window.ferreteriaApp.refreshProducts().then(() => {
+                    initializeCarousel();
+                });
+            }
+        }
+
+        // Función toast para esta página
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-message">${message}</span>
+                    <button class="toast-close">&times;</button>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            // Cerrar toast al hacer click en el botón
+            toast.querySelector('.toast-close').addEventListener('click', function() {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            });
+            
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        if (document.body.contains(toast)) {
+                            document.body.removeChild(toast);
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+
+        // Botón de recarga para testing
+        function addRefreshButton() {
+            const header = document.querySelector('header .max-w-7xl');
+            if (header) {
+                const refreshBtn = document.createElement('button');
+                refreshBtn.className = 'btn-secondary text-sm ml-4';
+                refreshBtn.innerHTML = '🔄 Recargar';
+                refreshBtn.onclick = refreshProducts;
+                header.querySelector('.flex.items-center').appendChild(refreshBtn);
+            }
+        }
+
+        // Agregar botón de recarga (útil para desarrollo)
+        setTimeout(addRefreshButton, 2000);
     </script>
 </body>
-
 </html>
