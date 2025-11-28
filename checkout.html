@@ -840,7 +840,8 @@
             `;
         }
         
-        async function submitOrder() {
+        // Reemplazar la función submitOrder() en checkout.html
+async function submitOrder() {
     const orderData = {
         orderId: 'ORD' + Date.now().toString().slice(-6),
         customer: {
@@ -862,28 +863,36 @@
         createdAt: new Date().toISOString()
     };
 
-    // 🔥 WEBHOOK SIN CORS - Métodos que funcionan
-    const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
-
     try {
         console.log('🔄 Enviando pedido...');
         
-        // 🔥 MÉTODO 1: Image Tag (RECOMENDADO)
-        sendWebhookViaImage(orderData, WEBHOOK_URL);
+        // 🔥 MÉTODO MEJORADO: Usar fetch con manejo de errores
+        const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
         
-        // 🔥 MÉTODO 2: Form Submission (Alternativa)
-        // sendWebhookViaForm(orderData, WEBHOOK_URL);
-        
-        console.log('✅ Webhook enviado (sin esperar respuesta)');
-        
-        // CONTINUAR INMEDIATAMENTE - No esperar respuesta
-        
+        // Intentar enviar al webhook pero no bloquear el proceso
+        fetch(WEBAPP_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'orderData=' + encodeURIComponent(JSON.stringify(orderData))
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('✅ Webhook response:', data);
+        })
+        .catch(error => {
+            console.warn('⚠️ Webhook falló, pero continuamos:', error);
+        });
+
         // 1. Enviar WhatsApp (ESENCIAL)
         window.ferreteriaApp.sendWhatsAppOrder(orderData);
         
-        // 2. Guardar localmente
+        // 2. Guardar localmente y limpiar carrito
         localStorage.removeItem('ferreteria_cart');
         localStorage.setItem('last_order', JSON.stringify(orderData));
+        window.ferreteriaApp.cart = [];
+        window.ferreteriaApp.updateCartUI();
         
         // 3. Redirigir a confirmación
         setTimeout(() => {
@@ -897,6 +906,8 @@
         window.ferreteriaApp.sendWhatsAppOrder(orderData);
         localStorage.removeItem('ferreteria_cart');
         localStorage.setItem('last_order', JSON.stringify(orderData));
+        window.ferreteriaApp.cart = [];
+        window.ferreteriaApp.updateCartUI();
         window.location.href = 'confirmation.html';
     }
 }
@@ -936,6 +947,7 @@ function sendWebhookViaForm(orderData, url) {
 </body>
 
 </html>
+
 
 
 
