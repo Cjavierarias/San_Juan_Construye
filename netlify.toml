@@ -1,11 +1,15 @@
 [build]
   publish = "/"
 
-[build.environment]
-  APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxfDoz7CKb85_fOrWym0YnzCBAa38sTS3X7S1x76L36FoI3OwzAXhzwehya-FiFu7In/exec"
-
 [[redirects]]
   from = "/api/saveOrder"
-  to = "${APPS_SCRIPT_URL}"
+  to = "https://script.google.com/macros/s/AKfycbxfDoz7CKb85_fOrWym0YnzCBAa38sTS3X7S1x76L36FoI3OwzAXhzwehya-FiFu7In/exec"
   status = 200
   force = true
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type"
