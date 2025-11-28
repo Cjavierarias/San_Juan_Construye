@@ -862,45 +862,81 @@
         createdAt: new Date().toISOString()
     };
 
-    // 🔥 WEBHOOK SIN CORS - Usando Image Tag
+    // 🔥 WEBHOOK SIN CORS - Métodos que funcionan
     const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
 
     try {
-        console.log('🔄 Enviando webhook...');
+        console.log('🔄 Enviando pedido...');
         
-        // Método 1: Image tag (más simple, sin CORS)
-        const img = new Image();
-        const url = `${WEBHOOK_URL}?orderData=${encodeURIComponent(JSON.stringify(orderData))}&source=webhook&timestamp=${Date.now()}`;
-        img.src = url;
+        // 🔥 MÉTODO 1: Image Tag (RECOMENDADO)
+        sendWebhookViaImage(orderData, WEBHOOK_URL);
         
-        console.log('✅ Webhook enviado:', url);
+        // 🔥 MÉTODO 2: Form Submission (Alternativa)
+        // sendWebhookViaForm(orderData, WEBHOOK_URL);
         
-        // NO ESPERAMOS RESPUESTA - Continuamos inmediatamente
+        console.log('✅ Webhook enviado (sin esperar respuesta)');
         
-        // 1. Enviar WhatsApp
+        // CONTINUAR INMEDIATAMENTE - No esperar respuesta
+        
+        // 1. Enviar WhatsApp (ESENCIAL)
         window.ferreteriaApp.sendWhatsAppOrder(orderData);
         
         // 2. Guardar localmente
         localStorage.removeItem('ferreteria_cart');
         localStorage.setItem('last_order', JSON.stringify(orderData));
         
-        // 3. Redirigir
-        window.location.href = 'confirmation.html';
+        // 3. Redirigir a confirmación
+        setTimeout(() => {
+            window.location.href = 'confirmation.html';
+        }, 500);
 
     } catch (error) {
         console.error('❌ Error:', error);
         
-        // Fallback seguro
+        // Fallback: Solo lo esencial
         window.ferreteriaApp.sendWhatsAppOrder(orderData);
         localStorage.removeItem('ferreteria_cart');
         localStorage.setItem('last_order', JSON.stringify(orderData));
         window.location.href = 'confirmation.html';
     }
 }
+
+// 🔥 FUNCIÓN PARA ENVIAR WEBHOOK VIA IMAGE (sin CORS)
+function sendWebhookViaImage(orderData, url) {
+    const img = new Image();
+    const webhookUrl = `${url}?orderData=${encodeURIComponent(JSON.stringify(orderData))}&source=webhook&timestamp=${Date.now()}&method=image`;
+    img.src = webhookUrl;
+    console.log('📤 Webhook Image URL:', webhookUrl);
+}
+
+// 🔥 FUNCIÓN PARA ENVIAR WEBHOOK VIA FORM (sin CORS)
+function sendWebhookViaForm(orderData, url) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    form.target = '_blank'; // Abre en nueva pestaña/pestaña oculta
+    form.style.display = 'none';
+    
+    // Agregar campo con los datos
+    const input = document.createElement('input');
+    input.name = 'orderData';
+    input.value = JSON.stringify(orderData);
+    form.appendChild(input);
+    
+    // Agregar al documento y enviar
+    document.body.appendChild(form);
+    form.submit();
+    
+    // Limpiar después de enviar
+    setTimeout(() => {
+        document.body.removeChild(form);
+    }, 1000);
+}
     </script>
 </body>
 
 </html>
+
 
 
 
