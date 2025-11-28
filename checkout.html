@@ -862,51 +862,60 @@
         createdAt: new Date().toISOString()
     };
 
-    // 🔥 NUEVA URL CON CORS 🔥
-    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
+    // 🔥 ENFOQUE SIN CORS - Usando HTML Form
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
 
     try {
-        console.log('🔄 Enviando pedido a:', WEBAPP_URL);
+        console.log('🔄 Enviando pedido via Form...');
         
-        const response = await fetch(WEBAPP_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(orderData)
-        });
-
-        const result = await response.json();
-        console.log('✅ Respuesta del servidor:', result);
-
-        if (result && result.success) {
-            // Éxito - proceder con el flujo normal
-            window.ferreteriaApp.sendWhatsAppOrder(orderData);
-            localStorage.removeItem('ferreteria_cart');
-            localStorage.setItem('last_order', JSON.stringify(orderData));
-            window.location.href = 'confirmation.html';
-        } else {
-            const errorMsg = result && result.error ? result.error : 'Error desconocido del servidor';
-            alert('Error al guardar el pedido: ' + errorMsg);
-            console.error('Error del servidor:', result);
-        }
+        // Crear un form temporal
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = APPS_SCRIPT_URL;
+        form.target = '_blank'; // Abrir en nueva pestaña (opcional)
+        
+        // Agregar datos como campos ocultos
+        const dataInput = document.createElement('input');
+        dataInput.type = 'hidden';
+        dataInput.name = 'orderData';
+        dataInput.value = JSON.stringify(orderData);
+        form.appendChild(dataInput);
+        
+        // Enviar el form
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+        
+        console.log('✅ Form enviado a Apps Script');
+        
+        // 🔥 CONTINUAR INMEDIATAMENTE (no esperar respuesta)
+        // El webhook se ejecuta en segundo plano
+        
+        // 1. Enviar WhatsApp
+        window.ferreteriaApp.sendWhatsAppOrder(orderData);
+        
+        // 2. Guardar localmente
+        localStorage.removeItem('ferreteria_cart');
+        localStorage.setItem('last_order', JSON.stringify(orderData));
+        
+        // 3. Redirigir a confirmación
+        window.location.href = 'confirmation.html';
 
     } catch (error) {
-        console.error('❌ Error completo:', error);
+        console.error('❌ Error:', error);
         
-        // Fallback: Guardar localmente
-        if (confirm('No se pudo conectar con el servidor. ¿Deseas guardar el pedido localmente y contactar por WhatsApp?')) {
-            window.ferreteriaApp.sendWhatsAppOrder(orderData);
-            localStorage.removeItem('ferreteria_cart');
-            localStorage.setItem('last_order', JSON.stringify(orderData));
-            window.location.href = 'confirmation.html';
-        }
+        // Fallback seguro
+        window.ferreteriaApp.sendWhatsAppOrder(orderData);
+        localStorage.removeItem('ferreteria_cart');
+        localStorage.setItem('last_order', JSON.stringify(orderData));
+        window.location.href = 'confirmation.html';
     }
 }
     </script>
 </body>
 
 </html>
+
 
 
 
