@@ -840,42 +840,63 @@
             `;
         }
         
-        function submitOrder() {
-            const orderData = {
-                orderId: 'ORD' + Date.now().toString().slice(-6),
-                customer: {
-                    name: `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`,
-                    phone: document.getElementById('phone').value,
-                    email: document.getElementById('email').value,
-                    address: {
-                        street: document.getElementById('street').value,
-                        number: document.getElementById('number').value,
-                        neighborhood: document.getElementById('neighborhood').value,
-                        city: document.getElementById('city').value,
-                        references: document.getElementById('references').value
-                    }
-                },
-                deliveryTime: selectedDeliveryTime,
-                items: window.ferreteriaApp.cart,
-                total: window.ferreteriaApp.getCartTotal(),
-                status: 'pendiente',
-                createdAt: new Date().toISOString()
-            };
-            
-            // Send WhatsApp message
+        async function submitOrder() {
+    const orderData = {
+        orderId: 'ORD' + Date.now().toString().slice(-6),
+        customer: {
+            name: `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`,
+            phone: document.getElementById('phone').value,
+            email: document.getElementById('email').value,
+            address: {
+                street: document.getElementById('street').value,
+                number: document.getElementById('number').value,
+                neighborhood: document.getElementById('neighborhood').value,
+                city: document.getElementById('city').value,
+                references: document.getElementById('references').value
+            }
+        },
+        deliveryTime: selectedDeliveryTime,
+        items: window.ferreteriaApp.cart,
+        total: window.ferreteriaApp.getCartTotal(),
+        status: 'pendiente',
+        createdAt: new Date().toISOString()
+    };
+
+    // Cambiá esto por la URL de tu Web App (Apps Script) una vez la despliegues
+    const WEBAPP_URL = 'YOUR_APPS_SCRIPT_WEBAPP_URL';
+
+    try {
+        // POST al Apps Script (doPost)
+        const res = await fetch(WEBAPP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                function: 'saveOrder',
+                parameters: [orderData]
+            })
+        });
+
+        const json = await res.json();
+
+        if (json && json.success) {
+            // Enviar WhatsApp desde el cliente (tu función ya existente)
             window.ferreteriaApp.sendWhatsAppOrder(orderData);
-            
-            // Clear cart and redirect to confirmation
+
+            // Limpiar carrito y guardar última orden para la confirmación
             localStorage.removeItem('ferreteria_cart');
-            
-            // Store order data for confirmation page
             localStorage.setItem('last_order', JSON.stringify(orderData));
-            
-            // Show success message and redirect
-            setTimeout(() => {
-                window.location.href = 'confirmation.html';
-            }, 2000);
+
+            // Redirigir a confirmation
+            window.location.href = 'confirmation.html';
+        } else {
+            alert('Error guardando el pedido: ' + (json && json.error ? json.error : 'Respuesta inválida'));
+            console.error('Respuesta saveOrder:', json);
         }
+    } catch (err) {
+        console.error('Error al contactar Apps Script:', err);
+        alert('No se pudo enviar el pedido al servidor. Revisá la URL del Web App y permisos.');
+    }
+}
     </script>
 </body>
 </html>
