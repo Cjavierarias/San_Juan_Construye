@@ -3,7 +3,7 @@
 
 [[redirects]]
   from = "/api/saveOrder"
-  to = "https://script.google.com/macros/s/AKfycbxfDoz7CKb85_fOrWym0YnzCBAa38sTS3X7S1x76L36FoI3OwzAXhzwehya-FiFu7In/exec"
+  to = "https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec"
   status = 200
   force = true
 
