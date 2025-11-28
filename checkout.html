@@ -303,6 +303,52 @@
                 display: none;
             }
         }
+
+        /* Toast Styles */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            transform: translateX(400px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast-success {
+            border-left: 4px solid #27AE60;
+        }
+        
+        .toast-error {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .toast-content {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .toast-message {
+            flex: 1;
+            margin-right: 12px;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #999;
+        }
     </style>
 </head>
 <body>
@@ -764,13 +810,13 @@
                 });
             } else if (currentStep === 3) {
                 if (!selectedDeliveryTime) {
-                    alert('Por favor selecciona un horario de entrega');
+                    showToast('Por favor selecciona un horario de entrega', 'error');
                     isValid = false;
                 }
             } else if (currentStep === 4) {
                 const terms = document.getElementById('terms');
                 if (!terms.checked) {
-                    alert('Debes aceptar los términos y condiciones');
+                    showToast('Debes aceptar los términos y condiciones', 'error');
                     isValid = false;
                 }
             }
@@ -840,118 +886,120 @@
             `;
         }
         
-        // Reemplazar la función submitOrder() en checkout.html
-async function submitOrder() {
-    const orderData = {
-        orderId: 'ORD' + Date.now().toString().slice(-6),
-        customer: {
-            name: `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`,
-            phone: document.getElementById('phone').value,
-            email: document.getElementById('email').value,
-            address: {
-                street: document.getElementById('street').value,
-                number: document.getElementById('number').value,
-                neighborhood: document.getElementById('neighborhood').value,
-                city: document.getElementById('city').value,
-                references: document.getElementById('references').value
+        async function submitOrder() {
+            const orderData = {
+                orderId: 'ORD' + Date.now().toString().slice(-6),
+                customer: {
+                    name: `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`,
+                    phone: document.getElementById('phone').value,
+                    email: document.getElementById('email').value,
+                    address: {
+                        street: document.getElementById('street').value,
+                        number: document.getElementById('number').value,
+                        neighborhood: document.getElementById('neighborhood').value,
+                        city: document.getElementById('city').value,
+                        references: document.getElementById('references').value
+                    }
+                },
+                deliveryTime: selectedDeliveryTime,
+                items: window.ferreteriaApp.cart,
+                total: window.ferreteriaApp.getCartTotal(),
+                status: 'pendiente',
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                console.log('🔄 Enviando pedido...');
+                
+                // 🔥 MÉTODO MEJORADO: Usar fetch con manejo de errores
+                const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
+                
+                // Deshabilitar botón para evitar múltiples envíos
+                const submitBtn = document.getElementById('place-order-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Procesando...';
+                
+                // Intentar enviar al webhook pero no bloquear el proceso
+                fetch(WEBAPP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'orderData=' + encodeURIComponent(JSON.stringify(orderData))
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('✅ Webhook response:', data);
+                })
+                .catch(error => {
+                    console.warn('⚠️ Webhook falló, pero continuamos:', error);
+                });
+
+                // 1. Enviar WhatsApp (ESENCIAL)
+                window.ferreteriaApp.sendWhatsAppOrder(orderData);
+                
+                // 2. Guardar localmente y limpiar carrito
+                localStorage.removeItem('ferreteria_cart');
+                localStorage.setItem('last_order', JSON.stringify(orderData));
+                window.ferreteriaApp.cart = [];
+                window.ferreteriaApp.updateCartUI();
+                
+                // 3. Redirigir a confirmación
+                setTimeout(() => {
+                    window.location.href = 'confirmation.html';
+                }, 1000);
+
+            } catch (error) {
+                console.error('❌ Error:', error);
+                
+                // Rehabilitar botón en caso de error
+                const submitBtn = document.getElementById('place-order-btn');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Realizar Pedido';
+                
+                showToast('Error al procesar el pedido. Por favor intenta nuevamente.', 'error');
             }
-        },
-        deliveryTime: selectedDeliveryTime,
-        items: window.ferreteriaApp.cart,
-        total: window.ferreteriaApp.getCartTotal(),
-        status: 'pendiente',
-        createdAt: new Date().toISOString()
-    };
+        }
 
-    try {
-        console.log('🔄 Enviando pedido...');
-        
-        // 🔥 MÉTODO MEJORADO: Usar fetch con manejo de errores
-        const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
-        
-        // Intentar enviar al webhook pero no bloquear el proceso
-        fetch(WEBAPP_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'orderData=' + encodeURIComponent(JSON.stringify(orderData))
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('✅ Webhook response:', data);
-        })
-        .catch(error => {
-            console.warn('⚠️ Webhook falló, pero continuamos:', error);
-        });
-
-        // 1. Enviar WhatsApp (ESENCIAL)
-        window.ferreteriaApp.sendWhatsAppOrder(orderData);
-        
-        // 2. Guardar localmente y limpiar carrito
-        localStorage.removeItem('ferreteria_cart');
-        localStorage.setItem('last_order', JSON.stringify(orderData));
-        window.ferreteriaApp.cart = [];
-        window.ferreteriaApp.updateCartUI();
-        
-        // 3. Redirigir a confirmación
-        setTimeout(() => {
-            window.location.href = 'confirmation.html';
-        }, 500);
-
-    } catch (error) {
-        console.error('❌ Error:', error);
-        
-        // Fallback: Solo lo esencial
-        window.ferreteriaApp.sendWhatsAppOrder(orderData);
-        localStorage.removeItem('ferreteria_cart');
-        localStorage.setItem('last_order', JSON.stringify(orderData));
-        window.ferreteriaApp.cart = [];
-        window.ferreteriaApp.updateCartUI();
-        window.location.href = 'confirmation.html';
-    }
-}
-
-// 🔥 FUNCIÓN PARA ENVIAR WEBHOOK VIA IMAGE (sin CORS)
-function sendWebhookViaImage(orderData, url) {
-    const img = new Image();
-    const webhookUrl = `${url}?orderData=${encodeURIComponent(JSON.stringify(orderData))}&source=webhook&timestamp=${Date.now()}&method=image`;
-    img.src = webhookUrl;
-    console.log('📤 Webhook Image URL:', webhookUrl);
-}
-
-// 🔥 FUNCIÓN PARA ENVIAR WEBHOOK VIA FORM (sin CORS)
-function sendWebhookViaForm(orderData, url) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = url;
-    form.target = '_blank'; // Abre en nueva pestaña/pestaña oculta
-    form.style.display = 'none';
-    
-    // Agregar campo con los datos
-    const input = document.createElement('input');
-    input.name = 'orderData';
-    input.value = JSON.stringify(orderData);
-    form.appendChild(input);
-    
-    // Agregar al documento y enviar
-    document.body.appendChild(form);
-    form.submit();
-    
-    // Limpiar después de enviar
-    setTimeout(() => {
-        document.body.removeChild(form);
-    }, 1000);
-}
+        // 🔥 FUNCIÓN TOAST MEJORADA
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-message">${message}</span>
+                    <button class="toast-close">&times;</button>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            // Cerrar toast al hacer click en el botón
+            toast.querySelector('.toast-close').addEventListener('click', function() {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            });
+            
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        if (document.body.contains(toast)) {
+                            document.body.removeChild(toast);
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
     </script>
 </body>
-
 </html>
-
-
-
-
-
-
-
-
