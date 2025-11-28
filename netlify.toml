@@ -1,0 +1,11 @@
+[build]
+  publish = "/"
+
+[build.environment]
+  APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywr0TXyDbiLSPq1M_dJtayccmWyIZrO4jhSAEu8NSq4AvzM0nqZDm3Tj2ULeiXOaxO/exec"
+
+[[redirects]]
+  from = "/api/saveOrder"
+  to = "${APPS_SCRIPT_URL}"
+  status = 200
+  force = true
