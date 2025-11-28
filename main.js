@@ -3,12 +3,32 @@ class FerreteriaApp {
     constructor() {
         this.cart = JSON.parse(localStorage.getItem('ferreteria_cart')) || [];
         this.products = [];
+        this.categories = this.getCategories();
         this.init();
+    }
+
+    getCategories() {
+        return [
+            'todos',
+            'herramientas',
+            'electricos', 
+            'fontaneria',
+            'pinturas',
+            'construccion',
+            'seguridad',
+            'tornilleria',
+            'jardin',
+            'iluminacion',
+            'madera',
+            'plasticos'
+        ];
     }
 
     async init() {
         await this.loadProductsFromSheet();
         this.updateCartUI();
+        this.generateCategoryFilters();
+        this.generateFeaturedCarousel();
         this.initParticles();
         this.initAnimations();
         this.bindEvents();
@@ -37,6 +57,7 @@ class FerreteriaApp {
             } else {
                 console.error('❌ Formato de respuesta inválido:', data);
                 this.products = this.getDefaultProducts();
+                this.generateProductsGrid();
             }
             
         } catch (error) {
@@ -44,6 +65,7 @@ class FerreteriaApp {
             // Fallback a productos por defecto
             this.products = this.getDefaultProducts();
             console.log('🔄 Usando productos por defecto');
+            this.generateProductsGrid();
         }
     }
 
@@ -53,23 +75,79 @@ class FerreteriaApp {
                 id: 'hammer-001',
                 name: 'Martillo de Carpintero',
                 category: 'herramientas',
+                allCategories: ['herramientas', 'construccion'],
+                featured: true,
                 price: 899.99,
                 stock: 25,
                 image: 'resources/hammer.jpg',
                 description: 'Martillo profesional con cabeza de acero forjado y mango ergonómico',
-                code: 'MRT-001'
+                code: 'MRT-001',
+                active: true
             },
             {
                 id: 'screwdriver-002',
                 name: 'Juego de Destornilladores',
                 category: 'herramientas',
+                allCategories: ['herramientas', 'electricos'],
+                featured: true,
                 price: 1299.99,
                 stock: 18,
                 image: 'resources/screwdriver.jpg',
                 description: 'Set de 6 destornilladores de precisión con puntas intercambiables',
-                code: 'DST-002'
+                code: 'DST-002',
+                active: true
+            },
+            {
+                id: 'drill-003',
+                name: 'Taladro Eléctrico 12V',
+                category: 'electricos',
+                allCategories: ['electricos', 'herramientas'],
+                featured: true,
+                price: 3499.99,
+                stock: 12,
+                image: 'resources/drill.jpg',
+                description: 'Taladro inalámbrico con batería de litio y 2 velocidades',
+                code: 'TLD-003',
+                active: true
             }
         ];
+    }
+
+    generateCategoryFilters() {
+        const filtersContainer = document.querySelector('.flex.flex-wrap.gap-3');
+        if (!filtersContainer) return;
+
+        filtersContainer.innerHTML = this.categories.map(category => {
+            const isActive = category === 'todos';
+            return `
+                <button class="category-filter ${isActive ? 'active' : ''}" 
+                        data-category="${category}">
+                    ${this.formatCategoryName(category)}
+                </button>
+            `;
+        }).join('');
+    }
+
+    formatCategoryName(category) {
+        const names = {
+            'todos': 'Todos',
+            'herramientas': 'Herramientas',
+            'electricos': 'Eléctricos',
+            'fontaneria': 'Fontanería',
+            'pinturas': 'Pinturas',
+            'construccion': 'Construcción',
+            'seguridad': 'Seguridad',
+            'tornilleria': 'Tornillería',
+            'jardin': 'Jardín',
+            'iluminacion': 'Iluminación',
+            'madera': 'Madera',
+            'plasticos': 'Plásticos'
+        };
+        return names[category] || category;
+    }
+
+    getFeaturedProducts() {
+        return this.products.filter(product => product.featured && product.stock > 0 && product.active);
     }
 
     generateProductsGrid() {
@@ -79,16 +157,19 @@ class FerreteriaApp {
         console.log('🔄 Generando cuadrícula de productos...');
 
         productsGrid.innerHTML = this.products.map(product => {
+            if (!product.active) return '';
+            
             const stockClass = product.stock > 20 ? 'stock-high' : 
                              product.stock > 10 ? 'stock-medium' : 'stock-low';
             const stockText = product.stock > 20 ? 'Disponible' : 
                             product.stock > 10 ? 'Poco stock' : 'Agotado';
             
-            // Usar imagen por defecto si no hay URL
             const imageUrl = product.image || 'resources/placeholder.jpg';
-            
+            const featuredBadge = product.featured ? '<div class="featured-badge">⭐ Destacado</div>' : '';
+
             return `
-                <div class="product-card p-6" data-category="${product.category}">
+                <div class="product-card p-6 relative" data-category="${product.category}" data-all-categories="${product.allCategories ? product.allCategories.join(',') : product.category}">
+                    ${featuredBadge}
                     <img src="${imageUrl}" alt="${product.name}" class="product-image mb-4" 
                          onerror="this.src='resources/placeholder.jpg'">
                     <div class="mb-2">
@@ -112,8 +193,68 @@ class FerreteriaApp {
             `;
         }).join('');
 
-        // Re-inicializar animaciones después de generar el grid
         this.initProductAnimations();
+    }
+
+    generateFeaturedCarousel() {
+        const featuredProducts = this.getFeaturedProducts();
+        const carouselContainer = document.getElementById('featured-carousel');
+        
+        if (!carouselContainer) return;
+
+        const splideTrack = carouselContainer.querySelector('.splide__track');
+        const splideList = carouselContainer.querySelector('.splide__list');
+        
+        if (!splideTrack || !splideList) return;
+
+        if (featuredProducts.length === 0) {
+            carouselContainer.style.display = 'none';
+            return;
+        }
+
+        splideList.innerHTML = featuredProducts.map(product => {
+            const imageUrl = product.image || 'resources/placeholder.jpg';
+            
+            return `
+                <li class="splide__slide">
+                    <div class="bg-white rounded-lg p-6 text-center">
+                        <img src="${imageUrl}" alt="${product.name}" 
+                             class="w-full h-48 object-cover rounded-lg mb-4"
+                             onerror="this.src='resources/placeholder.jpg'">
+                        <h3 class="font-bold text-lg mb-2">${product.name}</h3>
+                        <p class="text-orange-primary font-bold text-xl mb-4">$${product.price.toFixed(2)}</p>
+                        <button class="btn-primary" onclick="addToCart('${product.id}')"
+                                ${product.stock === 0 ? 'disabled' : ''}>
+                            ${product.stock === 0 ? 'Agotado' : 'Agregar al Carrito'}
+                        </button>
+                    </div>
+                </li>
+            `;
+        }).join('');
+
+        // Reinicializar el carousel si hay productos destacados
+        if (featuredProducts.length > 0 && typeof Splide !== 'undefined') {
+            try {
+                new Splide('#featured-carousel', {
+                    type: 'loop',
+                    perPage: Math.min(3, featuredProducts.length),
+                    perMove: 1,
+                    gap: '2rem',
+                    autoplay: true,
+                    interval: 3000,
+                    breakpoints: {
+                        768: {
+                            perPage: 1,
+                        },
+                        1024: {
+                            perPage: 2,
+                        }
+                    }
+                }).mount();
+            } catch (error) {
+                console.error('Error inicializando carousel:', error);
+            }
+        }
     }
 
     initProductAnimations() {
@@ -311,11 +452,20 @@ class FerreteriaApp {
         }
 
         // Filtros por categoría
-        document.querySelectorAll('.category-filter').forEach(button => {
-            button.addEventListener('click', (e) => {
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('category-filter')) {
                 const category = e.target.dataset.category;
+                
+                // Remover active de todos los botones
+                document.querySelectorAll('.category-filter').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Agregar active al botón clickeado
+                e.target.classList.add('active');
+                
                 this.filterByCategory(category);
-            });
+            }
         });
 
         // Cerrar toasts
@@ -352,14 +502,18 @@ class FerreteriaApp {
         const products = document.querySelectorAll('.product-card');
         
         products.forEach(product => {
-            const productCategory = product.dataset.category;
-            
-            if (category === 'all' || productCategory === category) {
+            if (category === 'todos') {
                 product.style.display = 'block';
                 product.classList.remove('hidden');
             } else {
-                product.style.display = 'none';
-                product.classList.add('hidden');
+                const productCategories = product.dataset.allCategories.split(',');
+                if (productCategories.includes(category)) {
+                    product.style.display = 'block';
+                    product.classList.remove('hidden');
+                } else {
+                    product.style.display = 'none';
+                    product.classList.add('hidden');
+                }
             }
         });
     }
