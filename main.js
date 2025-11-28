@@ -2,18 +2,52 @@
 class FerreteriaApp {
     constructor() {
         this.cart = JSON.parse(localStorage.getItem('ferreteria_cart')) || [];
-        this.products = this.getProducts();
+        this.products = [];
         this.init();
     }
 
-    init() {
+    async init() {
+        await this.loadProductsFromSheet();
         this.updateCartUI();
         this.initParticles();
         this.initAnimations();
         this.bindEvents();
     }
 
-    getProducts() {
+    async loadProductsFromSheet() {
+        try {
+            console.log('🔄 Cargando productos desde Google Sheet...');
+            
+            const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
+            
+            const response = await fetch(WEBAPP_URL);
+            
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.products && Array.isArray(data.products)) {
+                this.products = data.products;
+                console.log(`✅ ${this.products.length} productos cargados desde Sheet`);
+                
+                // Generar la cuadrícula de productos después de cargarlos
+                this.generateProductsGrid();
+            } else {
+                console.error('❌ Formato de respuesta inválido:', data);
+                this.products = this.getDefaultProducts();
+            }
+            
+        } catch (error) {
+            console.error('❌ Error cargando productos:', error);
+            // Fallback a productos por defecto
+            this.products = this.getDefaultProducts();
+            console.log('🔄 Usando productos por defecto');
+        }
+    }
+
+    getDefaultProducts() {
         return [
             {
                 id: 'hammer-001',
@@ -34,157 +68,88 @@ class FerreteriaApp {
                 image: 'resources/screwdriver.jpg',
                 description: 'Set de 6 destornilladores de precisión con puntas intercambiables',
                 code: 'DST-002'
-            },
-            {
-                id: 'drill-003',
-                name: 'Taladro Eléctrico 12V',
-                category: 'electricos',
-                price: 3499.99,
-                stock: 12,
-                image: 'resources/drill.jpg',
-                description: 'Taladro inalámbrico con batería de litio y 2 velocidades',
-                code: 'TLD-003'
-            },
-            {
-                id: 'screws-004',
-                name: 'Tornillos Mixtos 200pz',
-                category: 'tornillos',
-                price: 399.99,
-                stock: 50,
-                image: 'resources/screws.jpg',
-                description: 'Caja surtida de tornillos y tuercas de diferentes tamaños',
-                code: 'TRN-004'
-            },
-            {
-                id: 'paint-005',
-                name: 'Pintura Acrílica Blanca 5L',
-                category: 'pinturas',
-                price: 1899.99,
-                stock: 15,
-                image: 'resources/paint.jpg',
-                description: 'Pintura premium para interiores y exteriores, acabado mate',
-                code: 'PNT-005'
-            },
-            {
-                id: 'tape-006',
-                name: 'Cinta Métrica 5m',
-                category: 'herramientas',
-                price: 299.99,
-                stock: 30,
-                image: 'resources/tape.jpg',
-                description: 'Cinta métrica autoblocante con carcasa resistente',
-                code: 'CMT-006'
-            },
-            {
-                id: 'wrench-007',
-                name: 'Llave Inglesa 12"',
-                category: 'herramientas',
-                price: 699.99,
-                stock: 22,
-                image: 'resources/wrench.jpg',
-                description: 'Llave ajustable de acero cromado con mecanismo preciso',
-                code: 'LLV-007'
-            },
-            {
-                id: 'gloves-008',
-                name: 'Guantes de Seguridad',
-                category: 'seguridad',
-                price: 249.99,
-                stock: 40,
-                image: 'resources/gloves.jpg',
-                description: 'Guantes resistentes a cortes y químicos, talla única',
-                code: 'GNT-008'
-            },
-            {
-                id: 'helmet-009',
-                name: 'Casco de Seguridad Blanco',
-                category: 'seguridad',
-                price: 549.99,
-                stock: 28,
-                image: 'resources/helmet.jpg',
-                description: 'Casco industrial con suspensión interna y ventilación',
-                code: 'CSC-009'
-            },
-            {
-                id: 'saw-010',
-                name: 'Sierra de Metal 24"',
-                category: 'herramientas',
-                price: 1199.99,
-                stock: 16,
-                image: 'resources/saw.jpg',
-                description: 'Sierra de arco con hoja de acero rápido y mango ergonómico',
-                code: 'SRA-010'
-            },
-            {
-                id: 'toolbox-011',
-                name: 'Caja de Herramientas 3 Niveles',
-                category: 'herramientas',
-                price: 2499.99,
-                stock: 10,
-                image: 'resources/toolbox.jpg',
-                description: 'Organizador portátil con múltiples compartimentos y asa metálica',
-                code: 'CH-011'
-            },
-            {
-                id: 'pipes-012',
-                name: 'Tubo de Cobre 1/2" 3m',
-                category: 'plomeria',
-                price: 799.99,
-                stock: 20,
-                image: 'resources/pipes.jpg',
-                description: 'Tubo de cobre tipo L para instalaciones hidráulicas',
-                code: 'TBC-012'
-            },
-            {
-                id: 'switch-013',
-                name: 'Interruptor Doble 15A',
-                category: 'electricos',
-                price: 189.99,
-                stock: 35,
-                image: 'resources/switch.jpg',
-                description: 'Interruptor bipolar para instalación residencial',
-                code: 'INT-013'
-            },
-            {
-                id: 'wood-014',
-                name: 'Tabla de Pino 2x4 3m',
-                category: 'madera',
-                price: 599.99,
-                stock: 25,
-                image: 'resources/wood.jpg',
-                description: 'Madera de pino tratada para construcción en seco',
-                code: 'TBL-014'
-            },
-            {
-                id: 'chain-015',
-                name: 'Cadena de Acero 5mm 10m',
-                category: 'cadenas',
-                price: 1499.99,
-                stock: 14,
-                image: 'resources/chain.jpg',
-                description: 'Cadena galvanizada resistente a la corrosión',
-                code: 'CDN-015'
-            },
-            {
-                id: 'light-016',
-                name: 'Luz de Trabajo LED 50W',
-                category: 'electricos',
-                price: 899.99,
-                stock: 19,
-                image: 'resources/light.jpg',
-                description: 'Luz portátil con base magnética y batería recargable',
-                code: 'LTR-016'
             }
         ];
     }
 
+    generateProductsGrid() {
+        const productsGrid = document.querySelector('.product-grid');
+        if (!productsGrid) return;
+
+        console.log('🔄 Generando cuadrícula de productos...');
+
+        productsGrid.innerHTML = this.products.map(product => {
+            const stockClass = product.stock > 20 ? 'stock-high' : 
+                             product.stock > 10 ? 'stock-medium' : 'stock-low';
+            const stockText = product.stock > 20 ? 'Disponible' : 
+                            product.stock > 10 ? 'Poco stock' : 'Agotado';
+            
+            // Usar imagen por defecto si no hay URL
+            const imageUrl = product.image || 'resources/placeholder.jpg';
+            
+            return `
+                <div class="product-card p-6" data-category="${product.category}">
+                    <img src="${imageUrl}" alt="${product.name}" class="product-image mb-4" 
+                         onerror="this.src='resources/placeholder.jpg'">
+                    <div class="mb-2">
+                        <span class="stock-indicator ${stockClass}">${stockText}</span>
+                    </div>
+                    <h3 class="product-name font-bold text-lg mb-2 text-gray-800 font-inter">${product.name}</h3>
+                    <p class="product-description text-gray-600 text-sm mb-3">${product.description}</p>
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs text-gray-500">Código: ${product.code}</span>
+                        <span class="text-xs text-gray-500">Stock: ${product.stock}</span>
+                    </div>
+                    <div class="price-tag mb-4">$${product.price.toFixed(2)}</div>
+                    <button 
+                        class="btn-primary w-full" 
+                        onclick="addToCart('${product.id}')"
+                        ${product.stock === 0 ? 'disabled' : ''}
+                    >
+                        ${product.stock === 0 ? 'Agotado' : 'Agregar al Carrito'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        // Re-inicializar animaciones después de generar el grid
+        this.initProductAnimations();
+    }
+
+    initProductAnimations() {
+        if (typeof anime !== 'undefined') {
+            anime({
+                targets: '.product-card',
+                translateY: [50, 0],
+                opacity: [0, 1],
+                delay: anime.stagger(100),
+                duration: 800,
+                easing: 'easeOutExpo'
+            });
+        }
+    }
+
     addToCart(productId, quantity = 1) {
         const product = this.products.find(p => p.id === productId);
-        if (!product) return false;
+        if (!product) {
+            this.showToast('Producto no encontrado', 'error');
+            return false;
+        }
+
+        // Verificar stock
+        if (product.stock < quantity) {
+            this.showToast(`Stock insuficiente. Solo quedan ${product.stock} unidades`, 'error');
+            return false;
+        }
 
         const existingItem = this.cart.find(item => item.productId === productId);
         
         if (existingItem) {
+            // Verificar que no exceda el stock total
+            if (existingItem.quantity + quantity > product.stock) {
+                this.showToast(`No puedes agregar más. Stock máximo: ${product.stock}`, 'error');
+                return false;
+            }
             existingItem.quantity += quantity;
         } else {
             this.cart.push({
@@ -208,10 +173,14 @@ class FerreteriaApp {
     }
 
     updateQuantity(productId, quantity) {
+        const product = this.products.find(p => p.id === productId);
         const item = this.cart.find(item => item.productId === productId);
-        if (item) {
+        
+        if (item && product) {
             if (quantity <= 0) {
                 this.removeFromCart(productId);
+            } else if (quantity > product.stock) {
+                this.showToast(`No puedes agregar más. Stock máximo: ${product.stock}`, 'error');
             } else {
                 item.quantity = quantity;
                 this.saveCart();
@@ -222,7 +191,8 @@ class FerreteriaApp {
 
     getCartTotal() {
         return this.cart.reduce((total, item) => {
-            return total + (item.price * item.quantity);
+            const product = this.products.find(p => p.id === item.productId);
+            return total + (product ? product.price * item.quantity : 0);
         }, 0);
     }
 
@@ -328,16 +298,7 @@ class FerreteriaApp {
     }
 
     initAnimations() {
-        if (typeof anime !== 'undefined') {
-            anime({
-                targets: '.product-card',
-                translateY: [50, 0],
-                opacity: [0, 1],
-                delay: anime.stagger(100),
-                duration: 800,
-                easing: 'easeOutExpo'
-            });
-        }
+        // Las animaciones de productos ahora se manejan en generateProductsGrid
     }
 
     bindEvents() {
@@ -423,13 +384,23 @@ class FerreteriaApp {
         message += `📦 *Productos:*\n`;
         orderData.items.forEach(item => {
             const product = this.products.find(p => p.id === item.productId);
-            message += `• ${product.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}\n`;
+            if (product) {
+                message += `• ${product.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}\n`;
+            } else {
+                message += `• Producto no encontrado x${item.quantity}\n`;
+            }
         });
         
         message += `\n💰 *Total:* $${orderData.total.toFixed(2)}\n`;
         message += `📅 *Fecha:* ${new Date().toLocaleDateString()}`;
         
         return message;
+    }
+
+    // Función para recargar productos (útil para actualizar stock)
+    async refreshProducts() {
+        await this.loadProductsFromSheet();
+        this.updateCartUI();
     }
 }
 
@@ -449,4 +420,11 @@ function removeFromCart(productId) {
 
 function updateQuantity(productId, quantity) {
     window.ferreteriaApp.updateQuantity(productId, parseInt(quantity));
+}
+
+// Función global para recargar productos
+function refreshProducts() {
+    if (window.ferreteriaApp) {
+        window.ferreteriaApp.refreshProducts();
+    }
 }
