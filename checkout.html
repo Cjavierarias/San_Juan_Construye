@@ -862,34 +862,20 @@
         createdAt: new Date().toISOString()
     };
 
-    // 🔥 ENFOQUE SIN CORS - Usando HTML Form
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
+    // 🔥 WEBHOOK SIN CORS - Usando Image Tag
+    const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
 
     try {
-        console.log('🔄 Enviando pedido via Form...');
+        console.log('🔄 Enviando webhook...');
         
-        // Crear un form temporal
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = APPS_SCRIPT_URL;
-        form.target = '_blank'; // Abrir en nueva pestaña (opcional)
+        // Método 1: Image tag (más simple, sin CORS)
+        const img = new Image();
+        const url = `${WEBHOOK_URL}?orderData=${encodeURIComponent(JSON.stringify(orderData))}&source=webhook&timestamp=${Date.now()}`;
+        img.src = url;
         
-        // Agregar datos como campos ocultos
-        const dataInput = document.createElement('input');
-        dataInput.type = 'hidden';
-        dataInput.name = 'orderData';
-        dataInput.value = JSON.stringify(orderData);
-        form.appendChild(dataInput);
+        console.log('✅ Webhook enviado:', url);
         
-        // Enviar el form
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
-        
-        console.log('✅ Form enviado a Apps Script');
-        
-        // 🔥 CONTINUAR INMEDIATAMENTE (no esperar respuesta)
-        // El webhook se ejecuta en segundo plano
+        // NO ESPERAMOS RESPUESTA - Continuamos inmediatamente
         
         // 1. Enviar WhatsApp
         window.ferreteriaApp.sendWhatsAppOrder(orderData);
@@ -898,7 +884,7 @@
         localStorage.removeItem('ferreteria_cart');
         localStorage.setItem('last_order', JSON.stringify(orderData));
         
-        // 3. Redirigir a confirmación
+        // 3. Redirigir
         window.location.href = 'confirmation.html';
 
     } catch (error) {
@@ -915,6 +901,7 @@
 </body>
 
 </html>
+
 
 
 
