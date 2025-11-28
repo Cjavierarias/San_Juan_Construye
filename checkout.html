@@ -862,43 +862,61 @@
         createdAt: new Date().toISOString()
     };
 
-    // Cambiá esto por la URL de tu Web App (Apps Script) una vez la despliegues
-    const WEBAPP_URL = '/api/saveOrder';
+    // URL directa del Web App (sin proxy de Netlify para debugging)
+    const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxfDoz7CKb85_fOrWym0YnzCBAa38sTS3X7S1x76L36FoI3OwzAXhzwehya-FiFu7In/exec';
 
     try {
-        // POST al Apps Script (doPost)
-        const res = await fetch(WEBAPP_URL, {
+        console.log('Enviando pedido a:', WEBAPP_URL);
+        console.log('Datos del pedido:', orderData);
+
+        // Enviar directamente al Web App
+        const response = await fetch(WEBAPP_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                function: 'saveOrder',
-                parameters: [orderData]
-            })
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderData)
         });
 
-        const json = await res.json();
+        // Verificar si la respuesta es JSON válido
+        const responseText = await response.text();
+        console.log('Respuesta cruda:', responseText);
 
-        if (json && json.success) {
-            // Enviar WhatsApp desde el cliente (tu función ya existente)
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error parseando JSON:', parseError);
+            throw new Error('El servidor devolvió HTML en lugar de JSON. Revisa la configuración del Web App.');
+        }
+
+        if (result && result.success) {
+            // Éxito - proceder con el flujo normal
             window.ferreteriaApp.sendWhatsAppOrder(orderData);
-
-            // Limpiar carrito y guardar última orden para la confirmación
             localStorage.removeItem('ferreteria_cart');
             localStorage.setItem('last_order', JSON.stringify(orderData));
-
-            // Redirigir a confirmation
             window.location.href = 'confirmation.html';
         } else {
-            alert('Error guardando el pedido: ' + (json && json.error ? json.error : 'Respuesta inválida'));
-            console.error('Respuesta saveOrder:', json);
+            const errorMsg = result && result.error ? result.error : 'Error desconocido';
+            alert('Error al guardar el pedido: ' + errorMsg);
+            console.error('Error del servidor:', result);
         }
-    } catch (err) {
-        console.error('Error al contactar Apps Script:', err);
-        alert('No se pudo enviar el pedido al servidor. Revisá la URL del Web App y permisos.');
+
+    } catch (error) {
+        console.error('Error completo:', error);
+        
+        // Fallback: Guardar localmente y enviar solo WhatsApp
+        if (confirm('No se pudo conectar con el servidor. ¿Deseas guardar el pedido localmente y contactar por WhatsApp?')) {
+            window.ferreteriaApp.sendWhatsAppOrder(orderData);
+            localStorage.removeItem('ferreteria_cart');
+            localStorage.setItem('last_order', JSON.stringify(orderData));
+            window.location.href = 'confirmation.html';
+        }
     }
 }
     </script>
 </body>
 
 </html>
+
 
