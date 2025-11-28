@@ -862,14 +862,12 @@
         createdAt: new Date().toISOString()
     };
 
-    // URL directa del Web App (sin proxy de Netlify para debugging)
+    // 🔥 NUEVA URL CON CORS 🔥
     const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
 
     try {
-        console.log('Enviando pedido a:', WEBAPP_URL);
-        console.log('Datos del pedido:', orderData);
-
-        // Enviar directamente al Web App
+        console.log('🔄 Enviando pedido a:', WEBAPP_URL);
+        
         const response = await fetch(WEBAPP_URL, {
             method: 'POST',
             headers: {
@@ -878,17 +876,8 @@
             body: JSON.stringify(orderData)
         });
 
-        // Verificar si la respuesta es JSON válido
-        const responseText = await response.text();
-        console.log('Respuesta cruda:', responseText);
-
-        let result;
-        try {
-            result = JSON.parse(responseText);
-        } catch (parseError) {
-            console.error('Error parseando JSON:', parseError);
-            throw new Error('El servidor devolvió HTML en lugar de JSON. Revisa la configuración del Web App.');
-        }
+        const result = await response.json();
+        console.log('✅ Respuesta del servidor:', result);
 
         if (result && result.success) {
             // Éxito - proceder con el flujo normal
@@ -897,15 +886,15 @@
             localStorage.setItem('last_order', JSON.stringify(orderData));
             window.location.href = 'confirmation.html';
         } else {
-            const errorMsg = result && result.error ? result.error : 'Error desconocido';
+            const errorMsg = result && result.error ? result.error : 'Error desconocido del servidor';
             alert('Error al guardar el pedido: ' + errorMsg);
             console.error('Error del servidor:', result);
         }
 
     } catch (error) {
-        console.error('Error completo:', error);
+        console.error('❌ Error completo:', error);
         
-        // Fallback: Guardar localmente y enviar solo WhatsApp
+        // Fallback: Guardar localmente
         if (confirm('No se pudo conectar con el servidor. ¿Deseas guardar el pedido localmente y contactar por WhatsApp?')) {
             window.ferreteriaApp.sendWhatsAppOrder(orderData);
             localStorage.removeItem('ferreteria_cart');
@@ -918,6 +907,7 @@
 </body>
 
 </html>
+
 
 
 
