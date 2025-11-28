@@ -49,7 +49,37 @@ class FerreteriaApp {
             const data = await response.json();
             
             if (data.products && Array.isArray(data.products)) {
-                this.products = data.products;
+                // 🔥 CORRECCIÓN: Mapeo correcto de productos con nuevos campos
+                this.products = data.products.map(product => {
+                    // Manejar diferentes formatos de datos
+                    const processedProduct = {
+                        id: product.id || product.ID_Producto || '',
+                        name: product.name || product.Nombre || '',
+                        category: product.category || product.Categoría_Principal || '',
+                        allCategories: product.allCategories || 
+                                      (product.Todas_Categorías ? 
+                                       (typeof product.Todas_Categorías === 'string' ? 
+                                        product.Todas_Categorías.split(',').map(cat => cat.trim()) : 
+                                        product.Todas_Categorías) : 
+                                       [product.Categoría_Principal]),
+                        featured: product.featured || product.Destacado === 'SI',
+                        price: Number(product.price || product.Precio) || 0,
+                        stock: Number(product.stock || product.Stock) || 0,
+                        image: product.image || product['Imagen URL'] || 'resources/placeholder.jpg',
+                        description: product.description || product.Descripción || '',
+                        code: product.code || product.Código || '',
+                        active: product.active !== undefined ? product.active : 
+                               (product.Activo === 'SI' || product.Activo === true || product.Activo === '')
+                    };
+
+                    // Asegurar que allCategories sea un array
+                    if (!Array.isArray(processedProduct.allCategories)) {
+                        processedProduct.allCategories = [processedProduct.category];
+                    }
+
+                    return processedProduct;
+                }).filter(product => product.active); // 🔥 FILTRAR SOLO PRODUCTOS ACTIVOS
+
                 console.log(`✅ ${this.products.length} productos cargados desde Sheet`);
                 
                 // Generar la cuadrícula de productos después de cargarlos
@@ -506,7 +536,11 @@ class FerreteriaApp {
                 product.style.display = 'block';
                 product.classList.remove('hidden');
             } else {
-                const productCategories = product.dataset.allCategories.split(',');
+                // 🔥 CORRECCIÓN: Manejar tanto allCategories como category individual
+                const productCategories = product.dataset.allCategories ? 
+                    product.dataset.allCategories.split(',') : 
+                    [product.dataset.category];
+                    
                 if (productCategories.includes(category)) {
                     product.style.display = 'block';
                     product.classList.remove('hidden');
