@@ -198,15 +198,34 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-bottom: 12px;
+            position: relative;
         }
         
         .delivery-option:hover {
             border-color: #FF6B35;
+            background: rgba(255, 107, 53, 0.02);
         }
         
         .delivery-option.selected {
             border-color: #FF6B35;
             background: rgba(255, 107, 53, 0.05);
+        }
+        
+        .delivery-option.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #27AE60;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
         }
         
         .order-summary {
@@ -218,7 +237,7 @@
         
         .order-item {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
             padding-bottom: 12px;
@@ -348,6 +367,13 @@
             font-size: 18px;
             cursor: pointer;
             color: #999;
+        }
+
+        .delivery-time-error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
         }
     </style>
 </head>
@@ -560,6 +586,10 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="delivery-time-error" id="delivery-time-error">
+                                Por favor selecciona un horario de entrega
+                            </div>
                             
                             <div class="flex justify-between mt-6">
                                 <button type="button" class="btn-secondary" onclick="prevStep()">
@@ -617,7 +647,7 @@
             
             <!-- Order Summary Sidebar -->
             <div class="lg:col-span-1">
-                <div class="checkout-container p-6 sticky top-100">
+                <div class="checkout-container p-6 sticky top-32">
                     <h3 class="text-lg font-bold mb-4 font-inter">Resumen del Carrito</h3>
                     <div id="cart-summary">
                         <!-- Cart summary will be generated here -->
@@ -665,11 +695,12 @@
             generateCartSummary();
             bindDeliveryOptions();
             bindFormValidation();
+            updateCartUI();
         });
         
         function generateCartSummary() {
-            const cart = window.ferreteriaApp.cart;
-            const products = window.ferreteriaApp.products;
+            const cart = window.ferreteriaApp?.cart || JSON.parse(localStorage.getItem('ferreteria_cart')) || [];
+            const products = window.ferreteriaApp?.products || [];
             const cartSummary = document.getElementById('cart-summary');
             
             if (cart.length === 0) {
@@ -684,17 +715,20 @@
             
             const total = cart.reduce((sum, item) => {
                 const product = products.find(p => p.id === item.productId);
-                return sum + (product ? product.price * item.quantity : 0);
+                return sum + ((product?.price || item.price || 0) * item.quantity);
             }, 0);
             
             cartSummary.innerHTML = `
                 <div class="space-y-3 mb-4">
                     ${cart.map(item => {
                         const product = products.find(p => p.id === item.productId);
+                        const productName = product?.name || 'Producto no encontrado';
+                        const productPrice = product?.price || item.price || 0;
+                        
                         return `
                             <div class="flex justify-between items-center text-sm">
-                                <span>${product.name} x${item.quantity}</span>
-                                <span class="price-tag">$${(product.price * item.quantity).toFixed(2)}</span>
+                                <span class="truncate max-w-[120px]">${productName} x${item.quantity}</span>
+                                <span class="price-tag">$${(productPrice * item.quantity).toFixed(2)}</span>
                             </div>
                         `;
                     }).join('')}
@@ -713,15 +747,35 @@
         }
         
         function bindDeliveryOptions() {
+            console.log('🔧 Inicializando opciones de entrega...');
+            
+            document.querySelectorAll('.delivery-option').forEach(option => {
+                // Remover event listeners existentes primero
+                option.replaceWith(option.cloneNode(true));
+            });
+
+            // Re-seleccionar después del clone
             document.querySelectorAll('.delivery-option').forEach(option => {
                 option.addEventListener('click', function() {
+                    console.log('🕐 Horario clickeado:', this.dataset.time);
+                    
+                    // Remover selección anterior
                     document.querySelectorAll('.delivery-option').forEach(opt => {
                         opt.classList.remove('selected');
                     });
+                    
+                    // Agregar selección actual
                     this.classList.add('selected');
                     selectedDeliveryTime = this.dataset.time;
+                    
+                    // Ocultar mensaje de error si existe
+                    document.getElementById('delivery-time-error').style.display = 'none';
+                    
+                    console.log('✅ Horario seleccionado:', selectedDeliveryTime);
                 });
             });
+
+            console.log('✅ Opciones de entrega inicializadas');
         }
         
         function bindFormValidation() {
@@ -810,8 +864,11 @@
                 });
             } else if (currentStep === 3) {
                 if (!selectedDeliveryTime) {
+                    document.getElementById('delivery-time-error').style.display = 'block';
                     showToast('Por favor selecciona un horario de entrega', 'error');
                     isValid = false;
+                } else {
+                    document.getElementById('delivery-time-error').style.display = 'none';
                 }
             } else if (currentStep === 4) {
                 const terms = document.getElementById('terms');
@@ -842,27 +899,37 @@
                 s.classList.remove('active');
             });
             document.getElementById(`step-${step}`).classList.add('active');
+            
+            // Re-bind delivery options cuando se muestra el paso 3
+            if (step === 3) {
+                setTimeout(() => {
+                    bindDeliveryOptions();
+                }, 100);
+            }
         }
         
         function generateOrderSummary() {
-            const cart = window.ferreteriaApp.cart;
-            const products = window.ferreteriaApp.products;
+            const cart = window.ferreteriaApp?.cart || JSON.parse(localStorage.getItem('ferreteria_cart')) || [];
+            const products = window.ferreteriaApp?.products || [];
             const orderItems = document.getElementById('order-items');
             
             const total = cart.reduce((sum, item) => {
                 const product = products.find(p => p.id === item.productId);
-                return sum + (product ? product.price * item.quantity : 0);
+                return sum + ((product?.price || item.price || 0) * item.quantity);
             }, 0);
             
             orderItems.innerHTML = cart.map(item => {
                 const product = products.find(p => p.id === item.productId);
+                const productName = product?.name || 'Producto no encontrado';
+                const productPrice = product?.price || item.price || 0;
+                
                 return `
                     <div class="order-item">
                         <div>
-                            <span class="font-medium">${product.name}</span>
+                            <span class="font-medium">${productName}</span>
                             <span class="text-gray-500 text-sm">x${item.quantity}</span>
                         </div>
-                        <span class="price-tag">$${(product.price * item.quantity).toFixed(2)}</span>
+                        <span class="price-tag">$${(productPrice * item.quantity).toFixed(2)}</span>
                     </div>
                 `;
             }).join('');
@@ -902,47 +969,43 @@
                     }
                 },
                 deliveryTime: selectedDeliveryTime,
-                items: window.ferreteriaApp.cart,
-                total: window.ferreteriaApp.getCartTotal(),
+                items: window.ferreteriaApp?.cart || JSON.parse(localStorage.getItem('ferreteria_cart')) || [],
+                total: window.ferreteriaApp?.getCartTotal ? window.ferreteriaApp.getCartTotal() : 
+                      (JSON.parse(localStorage.getItem('ferreteria_cart')) || []).reduce((total, item) => {
+                          const products = window.ferreteriaApp?.products || [];
+                          const product = products.find(p => p.id === item.productId);
+                          return total + ((product?.price || item.price || 0) * item.quantity);
+                      }, 0),
                 status: 'pendiente',
                 createdAt: new Date().toISOString()
             };
 
             try {
-                console.log('🔄 Enviando pedido...');
-                
-                // 🔥 MÉTODO MEJORADO: Usar fetch con manejo de errores
-                const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw5JtLIQU5j-fj8fNO3iNfOQ3RO3pqmZMP2qFZ1RwpWl_4ZcyLIsNYQf_AgWEGx3I38/exec';
+                console.log('🔄 Enviando pedido...', orderData);
                 
                 // Deshabilitar botón para evitar múltiples envíos
                 const submitBtn = document.getElementById('place-order-btn');
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Procesando...';
                 
-                // Intentar enviar al webhook pero no bloquear el proceso
-                fetch(WEBAPP_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'orderData=' + encodeURIComponent(JSON.stringify(orderData))
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('✅ Webhook response:', data);
-                })
-                .catch(error => {
-                    console.warn('⚠️ Webhook falló, pero continuamos:', error);
-                });
-
                 // 1. Enviar WhatsApp (ESENCIAL)
-                window.ferreteriaApp.sendWhatsAppOrder(orderData);
+                if (window.ferreteriaApp) {
+                    window.ferreteriaApp.sendWhatsAppOrder(orderData);
+                } else {
+                    // Fallback para WhatsApp
+                    const phoneNumber = '2644803769';
+                    const message = formatOrderMessage(orderData);
+                    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                }
                 
                 // 2. Guardar localmente y limpiar carrito
                 localStorage.removeItem('ferreteria_cart');
                 localStorage.setItem('last_order', JSON.stringify(orderData));
-                window.ferreteriaApp.cart = [];
-                window.ferreteriaApp.updateCartUI();
+                if (window.ferreteriaApp) {
+                    window.ferreteriaApp.cart = [];
+                    window.ferreteriaApp.updateCartUI();
+                }
                 
                 // 3. Redirigir a confirmación
                 setTimeout(() => {
@@ -961,7 +1024,42 @@
             }
         }
 
-        // 🔥 FUNCIÓN TOAST MEJORADA
+        function formatOrderMessage(orderData) {
+            let message = `🛒 *Nuevo Pedido de Ferretería*\n\n`;
+            message += `📋 *Orden:* ${orderData.orderId}\n`;
+            message += `👤 *Cliente:* ${orderData.customer.name}\n`;
+            message += `📱 *Teléfono:* ${orderData.customer.phone}\n`;
+            message += `📍 *Dirección:* ${orderData.customer.address.street}, ${orderData.customer.address.neighborhood}\n`;
+            message += `🕐 *Horario:* ${orderData.deliveryTime}\n\n`;
+            
+            message += `📦 *Productos:*\n`;
+            orderData.items.forEach(item => {
+                const products = window.ferreteriaApp?.products || [];
+                const product = products.find(p => p.id === item.productId);
+                if (product) {
+                    message += `• ${product.name} x${item.quantity} - $${((product.price || 0) * item.quantity).toFixed(2)}\n`;
+                } else {
+                    message += `• Producto no encontrado x${item.quantity}\n`;
+                }
+            });
+            
+            message += `\n💰 *Total:* $${orderData.total.toFixed(2)}\n`;
+            message += `📅 *Fecha:* ${new Date().toLocaleDateString()}`;
+            
+            return message;
+        }
+
+        function updateCartUI() {
+            const cartCount = document.getElementById('cart-count');
+            const cart = JSON.parse(localStorage.getItem('ferreteria_cart')) || [];
+            const count = cart.reduce((total, item) => total + item.quantity, 0);
+            
+            if (cartCount) {
+                cartCount.textContent = count;
+                cartCount.style.display = count > 0 ? 'block' : 'none';
+            }
+        }
+
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
@@ -1000,6 +1098,19 @@
                 }
             }, 5000);
         }
+
+        // Debug helper
+        function debugDeliveryOptions() {
+            console.log('🔍 Debug opciones de entrega:');
+            console.log('Opciones encontradas:', document.querySelectorAll('.delivery-option').length);
+            document.querySelectorAll('.delivery-option').forEach((opt, i) => {
+                console.log(`Opción ${i}:`, opt.dataset.time, 'selected:', opt.classList.contains('selected'));
+            });
+            console.log('Horario seleccionado:', selectedDeliveryTime);
+        }
+
+        // Ejecutar debug al cargar la página
+        setTimeout(debugDeliveryOptions, 1000);
     </script>
 </body>
 </html>
